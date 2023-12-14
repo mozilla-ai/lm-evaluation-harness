@@ -42,6 +42,7 @@ def simple_evaluate(
     write_out: bool = False,
     log_samples: bool = True,
     gen_kwargs: str = None,
+    include_git_hash: bool = False,
 ):
     """Instantiate and evaluate a model on a list of tasks.
 
@@ -75,6 +76,8 @@ def simple_evaluate(
     :param gen_kwargs: str
         String arguments for model generation
         Ignored for all tasks with loglikelihood output_type
+    :param include_git_hash: bool
+        Whether to include the git hash in the result payload
     :return
         Dictionary of results
     """
@@ -118,7 +121,9 @@ def simple_evaluate(
             use_cache
             # each rank receives a different cache db.
             # necessary to avoid multiple writes to cache at once
-            + "_rank" + str(lm.rank) + ".db",
+            + "_rank"
+            + str(lm.rank)
+            + ".db",
         )
 
     task_dict = lm_eval.tasks.get_task_dict(tasks)
@@ -176,7 +181,8 @@ def simple_evaluate(
             "bootstrap_iters": bootstrap_iters,
             "gen_kwargs": gen_kwargs,
         }
-        results["git_hash"] = get_git_commit_hash()
+        if include_git_hash:
+            results["git_hash"] = get_git_commit_hash()
         return results
     else:
         return None
@@ -539,9 +545,7 @@ def evaluate(
                                 ) + total_size * current_size / (
                                     (total_size + current_size)
                                     * (total_size + current_size - 1)
-                                ) * (
-                                    results[group][metric] - metric_score
-                                ) ** 2
+                                ) * (results[group][metric] - metric_score) ** 2
                             else:
                                 results[group][metric] = metric_score
                                 results[group][stderr] = var_score
